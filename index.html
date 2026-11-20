@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+<html lang="vi" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Thư Viện Số COM109 - Tin Học & Ứng Dụng AI</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet" />
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Inter', 'sans-serif'], mono: ['JetBrains Mono', 'monospace'] },
+          colors: { brand: { 50:'#eef2ff',100:'#e0e7ff',200:'#c7d2fe',400:'#818cf8',500:'#6366f1',600:'#4f46e5',700:'#4338ca',900:'#312e81',950:'#1e1b4b' } }
+        }
+      }
+    };
+  </script>
+  <style>
+    ::-webkit-scrollbar{width:6px;height:6px}::-webkit-scrollbar-thumb{background:rgba(100,116,139,.35);border-radius:9999px}
+    @keyframes pulseFlow{0%,100%{stroke-dashoffset:24}50%{stroke-dashoffset:0}}.animate-dash{stroke-dasharray:6 6;animation:pulseFlow 2s linear infinite}
+    @keyframes floatSlow{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}.animate-float{animation:floatSlow 3.2s ease-in-out infinite}
+    @keyframes fadeIn{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}.fade-in{animation:fadeIn .22s ease-out forwards}
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 dark:bg-slate-950 dark:text-slate-100 font-sans antialiased transition-colors duration-200">
+  <div id="toast-box" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+  <!-- Header -->
+  <header class="sticky top-0 z-40 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-800">
+    <div class="max-w-[1560px] mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-3">
+      <div class="flex items-center gap-3 min-w-0">
+        <button id="menu-btn" aria-label="Menu" class="lg:hidden p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800">☰</button>
+        <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-brand-600 to-cyan-500 flex items-center justify-center text-white font-extrabold shadow-sm shrink-0">AI</div>
+        <div class="truncate">
+          <h1 class="text-sm sm:text-base font-extrabold tracking-tight truncate">Thư Viện Số <span class="text-brand-600 dark:text-brand-400">COM109</span></h1>
+          <p class="text-[11px] text-slate-500 dark:text-slate-400 hidden sm:block truncate">Tin Học & Ứng Dụng AI • FPT Polytechnic</p>
+        </div>
+      </div>
+
+      <div class="flex-1 max-w-md relative">
+        <input id="search-input" type="text" placeholder="Tìm bài học, thuật ngữ (AI, Cloud, Excel, Prompt...)" class="w-full pl-9 pr-8 py-2 text-xs sm:text-sm rounded-xl bg-slate-100 dark:bg-slate-800 border border-transparent focus:border-brand-500 outline-none transition" />
+        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs">🔍</span>
+        <button id="clear-search" class="hidden absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs font-bold">✕</button>
+      </div>
+
+      <div class="flex items-center gap-3 shrink-0">
+        <div class="hidden sm:flex flex-col items-end">
+          <span id="prog-text" class="text-xs font-bold text-brand-600 dark:text-brand-400">0/8 (0%)</span>
+          <div class="w-28 h-2 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden mt-1">
+            <div id="prog-bar" class="h-full bg-gradient-to-r from-brand-500 to-emerald-500 transition-all duration-300" style="width:0%"></div>
+          </div>
+        </div>
+        <button id="theme-btn" aria-label="Đổi giao diện" class="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-sm transition">🌓</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="max-w-[1560px] mx-auto flex relative min-h-[calc(100vh-4rem)]">
+    <div id="backdrop" class="fixed inset-0 bg-slate-950/50 z-30 hidden lg:hidden"></div>
+
+    <!-- Sidebar -->
+    <aside id="sidebar" class="fixed lg:sticky top-16 left-0 z-30 w-80 h-[calc(100vh-4rem)] bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col -translate-x-full lg:translate-x-0 transition-transform duration-200 shrink-0">
+      <div class="p-4 border-b border-slate-200 dark:border-slate-800">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Danh mục 8 bài học</span>
+          <span id="nav-count" class="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-brand-50 dark:bg-brand-950 text-brand-600 dark:text-brand-300">8 bài</span>
+        </div>
+        <div class="grid grid-cols-3 gap-1.5 text-xs">
+          <button data-filter="all" class="filter-btn py-1.5 rounded-lg font-semibold bg-brand-600 text-white">Tất cả</button>
+          <button data-filter="done" class="filter-btn py-1.5 rounded-lg font-medium bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">Đã xong</button>
+          <button data-filter="todo" class="filter-btn py-1.5 rounded-lg font-medium bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">Chưa học</button>
+        </div>
+      </div>
+
+      <nav id="nav-list" class="flex-1 overflow-y-auto p-3 space-y-1.5"></nav>
+
+      <div class="p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-900/80 text-xs space-y-2">
+        <div class="flex justify-between">
+          <span class="text-slate-500 dark:text-slate-400">Điểm Quiz TB:</span>
+          <span id="avg-score" class="font-bold text-emerald-600 dark:text-emerald-400">Chưa thi</span>
+        </div>
+        <button id="reset-btn" class="w-full py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-rose-600 transition">Đặt lại tiến độ</button>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 min-w-0 p-4 sm:p-6 lg:p-8">
+      <section class="rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 sm:p-6 shadow-xs mb-6">
+        <div class="flex flex-col xl:flex-row xl:items-center justify-between gap-4">
+          <div class="space-y-1.5">
+            <div class="flex flex-wrap items-center gap-2">
+              <span id="b-code" class="px-3 py-1 rounded-full text-xs font-bold bg-brand-100 text-brand-700 dark:bg-brand-900/60 dark:text-brand-300">BÀI 01</span>
+              <span id="b-tag" class="px-3 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300">Nền tảng số</span>
+              <span id="b-status" class="px-3 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300">⏳ Đang học</span>
+            </div>
+            <h2 id="b-title" class="text-xl sm:text-2xl font-extrabold tracking-tight"></h2>
+            <p id="b-sub" class="text-xs sm:text-sm text-slate-600 dark:text-slate-400 max-w-3xl leading-relaxed"></p>
+          </div>
+          <button id="complete-btn" class="px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold bg-emerald-600 hover:bg-emerald-700 text-white shrink-0 transition">✓ Đánh dấu hoàn thành</button>
+        </div>
+
+        <!-- 4 Tabs -->
+        <div class="mt-5 pt-4 border-t border-slate-100 dark:border-slate-800 flex flex-wrap gap-2">
+          <button data-tab="lecture" class="tab-btn px-4 py-2 rounded-xl text-xs sm:text-sm font-bold bg-brand-600 text-white transition">📄 Slide & Tóm tắt</button>
+          <button data-tab="diagram" class="tab-btn px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 transition">🖼️ Sơ đồ & Infographic</button>
+          <button data-tab="video" class="tab-btn px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 transition">🎬 Video minh họa</button>
+          <button data-tab="quiz" class="tab-btn px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 transition">📝 Quiz (5 câu)</button>
+        </div>
+      </section>
+
+      <div id="tab-view" class="fade-in"></div>
+
+      <!-- Personal Notes -->
+      <section class="mt-7 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5">
+        <div class="flex items-center justify-between gap-2 mb-2.5">
+          <h3 class="text-sm font-bold flex items-center gap-2"><span>✍️</span> Ghi chú cá nhân (Tự động lưu)</h3>
+          <div class="flex items-center gap-2">
+            <span id="note-status" class="text-xs text-emerald-600 dark:text-emerald-400">✓ Đã lưu</span>
+            <button id="export-note" class="px-3 py-1 rounded-lg text-xs font-semibold bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700">Tải .txt</button>
+          </div>
+        </div>
+        <textarea id="note-input" rows="3" placeholder="Ghi lại ý chính hoặc câu hỏi ôn tập cho bài học này..." class="w-full rounded-2xl p-3.5 text-sm bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:border-brand-500 outline-none resize-y"></textarea>
+      </section>
+
+      <div class="mt-5 flex justify-between">
+        <button id="prev-btn" class="px-4 py-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs sm:text-sm font-semibold disabled:opacity-40">← Bài trước</button>
+        <button id="next-btn" class="px-4 py-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs sm:text-sm font-semibold disabled:opacity-40">Bài tiếp theo →</button>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    // =========================================================================
+    // DỮ LIỆU 8 BÀI HỌC COM109 (FPT POLYTECHNIC)
+    // =========================================================================
+    const LESSONS = [
+      {
+        id: 1, code: "BÀI 01", tag: "Nền tảng số",
+        title: "CMCN 4.0 & Chuyển đổi số",
+        sub: "Tiến trình 4 cuộc cách mạng công nghiệp, công nghệ lõi (AI, IoT, Big Data, Cloud, Blockchain), phân biệt Tin học hóa với Chuyển đổi số và 3 trụ cột CĐS Quốc gia.",
+        slides: [
+          { t: "4 Cuộc Cách mạng Công nghiệp (1.0 – 4.0)", b: ["1.0 (1784): Động cơ hơi nước & Cơ khí hóa", "2.0 (1870): Điện khí hóa & Dây chuyền hàng loạt", "3.0 (1969): Máy tính, Bán dẫn & Tự động hóa", "4.0 (Hiện nay): Hệ thống Thực-Ảo (CPS), AI, IoT & Big Data"] },
+          { t: "Bộ 5 Công nghệ Lõi Kỷ nguyên 4.0", b: ["AI: Phân tích, dự đoán và sáng tạo nội dung", "IoT: Cảm biến thu thập dữ liệu thế giới thực", "Big Data: Dữ liệu lớn chuẩn 5V (Volume, Velocity, Variety, Veracity, Value)", "Cloud & Blockchain: Hạ tầng tính toán linh hoạt & Sổ cái minh bạch"] },
+          { t: "Tin học hóa vs. Chuyển đổi số & 3 Trụ cột", b: ["Tin học hóa: Số hóa tài liệu, giữ nguyên quy trình cũ", "Chuyển đổi số: Tái tạo mô hình vận hành dựa trên dữ liệu", "3 Trụ cột Quốc gia: Chính phủ số – Kinh tế số – Xã hội số"] }
+        ],
+        cards: [
+          ["CMCN 4.0", "Hợp nhất thế giới thực – số – sinh học thông qua Hệ thống thực-ảo (CPS), AI và IoT."],
+          ["Chuyển đổi số", "Thay đổi toàn diện cách sống, làm việc và mô hình sản xuất dựa trên dữ liệu số."],
+          ["Đặc trưng 5V Big Data", "Volume (Khối lượng), Velocity (Tốc độ), Variety (Đa dạng), Veracity (Tin cậy), Value (Giá trị)."],
+          ["3 Trụ cột CĐS", "Chính phủ số (phục vụ), Kinh tế số (tăng trưởng), Xã hội số (công dân số VNeID)."]
+        ],
+        notes: [
+          "<strong>Tiến trình 1.0 → 4.0:</strong> Từ cơ khí hơi nước (1.0), năng lượng điện (2.0), tự động hóa máy tính (3.0) đến thông minh hóa bằng CPS, AI, IoT (4.0).",
+          "<strong>Khác biệt cốt lõi:</strong> Tin học hóa chỉ dùng CNTT hỗ trợ quy trình cũ (giấy → file Excel); Chuyển đổi số tái cấu trúc mô hình vận hành lấy dữ liệu làm trung tâm.",
+          "<strong>Mục tiêu Việt Nam:</strong> Kinh tế số đạt 20% GDP năm 2025 và 30% GDP năm 2030."
+        ],
+        diagram: [
+          { k: "CMCN 1.0", v: "Hơi nước & Cơ khí", c: "bg-slate-700" },
+          { k: "CMCN 2.0", v: "Điện & Dây chuyền", c: "bg-sky-700" },
+          { k: "CMCN 3.0", v: "Máy tính & Internet", c: "bg-indigo-700" },
+          { k: "CMCN 4.0", v: "CPS • AI • IoT • Big Data", c: "bg-emerald-700" }
+        ],
+        video: [
+          { t: "00:00", h: "Từ 1.0 đến 4.0", s: "CMCN 4.0 kết nối thế giới vật lý và không gian số thông qua cảm biến IoT, dữ liệu lớn và trí tuệ nhân tạo." },
+          { t: "01:40", h: "Tin học hóa vs. CĐS", s: "Chuyển đổi số không chỉ là quét giấy thành PDF mà là thay đổi tư duy và mô hình vận hành dựa trên dữ liệu." },
+          { t: "03:10", h: "3 Trụ cột Quốc gia", s: "Chính phủ số, Kinh tế số và Xã hội số tạo nên hệ sinh thái công dân số hiện đại." }
+        ],
+        quiz: [
+          { q: "Yếu tố nào đặc trưng cho cuộc CMCN lần thứ 4 (4.0)?", o: ["Động cơ hơi nước", "Dây chuyền lắp ráp chạy điện", "Hệ thống thực-ảo (CPS), AI, IoT và Big Data", "Máy tính dùng đèn chân không"], a: 2, e: "CMCN 4.0 hợp nhất thế giới thực và ảo qua CPS, AI, IoT và Dữ liệu lớn." },
+          { q: "Điểm khác nhau căn bản giữa Tin học hóa và Chuyển đổi số là gì?", o: ["Tin học hóa dùng điện thoại", "Tin học hóa số hóa quy trình cũ; Chuyển đổi số tái tạo mô hình vận hành bằng dữ liệu", "Không có gì khác nhau", "Tin học hóa đắt hơn"], a: 1, e: "Chuyển đổi số thay đổi toàn diện cách vận hành và ra quyết định dựa trên dữ liệu." },
+          { q: "Ba trụ cột Chuyển đổi số Quốc gia Việt Nam gồm:", o: ["Chính phủ số, Kinh tế số, Xã hội số", "Phần cứng, Phần mềm, Mạng", "AI, IoT, Cloud", "Nông nghiệp, Công nghiệp, Dịch vụ"], a: 0, e: "3 trụ cột chiến lược là Chính phủ số, Kinh tế số và Xã hội số." },
+          { q: "Chữ 'V' nào KHÔNG thuộc 5V của Big Data?", o: ["Volume", "Velocity", "Variety", "Virtualization"], a: 3, e: "5V gồm Volume, Velocity, Variety, Veracity và Value." },
+          { q: "Mục tiêu tỷ trọng Kinh tế số trong GDP Việt Nam năm 2030 là:", o: ["10%", "20%", "30%", "50%"], a: 2, e: "Mục tiêu đạt 20% GDP vào năm 2025 và 30% GDP vào năm 2030." }
+        ]
+      },
+      {
+        id: 2, code: "BÀI 02", tag: "Phần cứng & OS",
+        title: "Máy tính & Hệ điều hành hiện đại",
+        sub: "Chu trình xử lý I-P-O-S, kiến trúc CPU (CU, ALU, Cache), bộ nhớ RAM/ROM/SSD, vai trò hạt nhân (Kernel) hệ điều hành và ảo hóa Container/Docker.",
+        slides: [
+          { t: "Chu trình Xử lý Dữ liệu I-P-O-S", b: ["Input: Bàn phím, chuột, micro, cảm biến thu nhận tín hiệu", "Process: CPU (CU + ALU + Cache) và GPU xử lý tính toán", "Output: Màn hình, loa, máy in hiển thị kết quả", "Storage: SSD NVMe, HDD lưu trữ bền vững"] },
+          { t: "Phân cấp Bộ nhớ & Cấu hình Laptop AI", b: ["Thanh ghi CPU → Cache L1/L2/L3 → RAM DDR5 (khả biến)", "ROM UEFI/BIOS: Lưu firmware khởi động hệ thống", "Laptop học AI: RAM ≥ 16GB–32GB, SSD NVMe 512GB+, GPU NVIDIA RTX (CUDA)"] },
+          { t: "Hệ điều hành (OS) & Ảo hóa Docker", b: ["Kernel (Hạt nhân): Cầu nối phần cứng với phần mềm ứng dụng", "Nguyên tắc Đặc quyền tối thiểu (PoLP) & Bộ nhớ ảo (Virtual Memory)", "Container (Docker): Chia sẻ chung Kernel OS chủ → nhẹ, chạy tức thì"] }
+        ],
+        cards: [
+          ["CPU (CU & ALU)", "CU giải mã điều phối lệnh; ALU thực hiện phép tính số học và logic."],
+          ["RAM vs. ROM", "RAM mất dữ liệu khi tắt nguồn; ROM giữ firmware khởi động UEFI/BIOS."],
+          ["Hệ điều hành (OS)", "Quản lý tiến trình, bộ nhớ, thiết bị I/O, hệ thống tệp và bảo mật phân quyền."],
+          ["VM vs. Docker", "VM ảo hóa cả Guest OS (nặng); Docker dùng chung Host Kernel (siêu nhẹ)."]
+        ],
+        notes: [
+          "<strong>Phần cứng cốt lõi:</strong> CPU đa nhân + bộ nhớ đệm Cache L1/L2/L3 giúp giảm độ trễ truy xuất RAM; SSD NVMe đạt tốc độ hàng nghìn MB/s vượt trội HDD cơ học.",
+          "<strong>Hệ điều hành hiện đại:</strong> Windows 11 (Copilot+), macOS (Apple Intelligence) và Linux tích hợp sâu NPU để chạy tác vụ AI cục bộ.",
+          "<strong>Ảo hóa:</strong> Docker Container là tiêu chuẩn đóng gói môi trường Python và mô hình AI đồng nhất từ máy cá nhân lên máy chủ."
+        ],
+        diagram: [
+          { k: "1. INPUT", v: "Bàn phím • Cảm biến", c: "bg-sky-700" },
+          { k: "2. PROCESS", v: "CPU (CU/ALU) • RAM", c: "bg-indigo-700" },
+          { k: "3. OUTPUT", v: "Màn hình • Thiết bị xuất", c: "bg-emerald-700" },
+          { k: "4. STORAGE", v: "SSD NVMe • Cloud", c: "bg-amber-700" }
+        ],
+        video: [
+          { t: "00:00", h: "Luồng dữ liệu I-P-O-S", s: "Dữ liệu đi từ thiết bị nhập vào RAM, được khối CU và ALU của CPU xử lý rồi xuất ra màn hình hoặc lưu xuống SSD." },
+          { t: "01:45", h: "Nhạc trưởng Hệ điều hành", s: "Hạt nhân Kernel phân chia CPU, bộ nhớ ảo và kiểm soát quyền truy cập giữa các tiến trình." },
+          { t: "03:15", h: "Sức mạnh Container Docker", s: "Thay vì cài máy ảo nặng hàng chục GB, Docker chia sẻ chung nhân OS giúp khởi chạy ứng dụng AI trong mili-giây." }
+        ],
+        quiz: [
+          { q: "Bộ phận nào trong CPU thực hiện các phép cộng trừ và so sánh logic?", o: ["CU (Control Unit)", "ALU (Arithmetic Logic Unit)", "ROM BIOS", "SSD"], a: 1, e: "ALU (Khối số học và logic) thực hiện toàn bộ phép toán số học và logic." },
+          { q: "Đặc điểm nào đúng về bộ nhớ RAM?", o: ["Lưu dữ liệu vĩnh viễn khi mất điện", "Là bộ nhớ khả biến, mất dữ liệu khi ngắt nguồn điện", "Chứa firmware khởi động máy", "Chậm hơn ổ cứng HDD"], a: 1, e: "RAM là bộ nhớ truy cập ngẫu nhiên khả biến (volatile)." },
+          { q: "Thành phần cốt lõi nhất của hệ điều hành giao tiếp trực tiếp với phần cứng là:", o: ["Trình duyệt Web", "Hạt nhân (Kernel)", "Bộ gõ tiếng Việt", "Thùng rác"], a: 1, e: "Kernel là trái tim của OS quản lý tài nguyên phần cứng." },
+          { q: "Ưu điểm chính của Container (Docker) so với Máy ảo (VM) là gì?", o: ["Chia sẻ chung Kernel OS chủ nên nhẹ và khởi động cực nhanh", "Không cần hệ điều hành chủ", "Chỉ chạy được trên Windows XP", "Tốn nhiều RAM hơn VM"], a: 0, e: "Container không phải gánh thêm một Guest OS hoàn chỉnh như VM." },
+          { q: "Chuẩn firmware khởi động hiện đại thay thế BIOS truyền thống là:", o: ["MS-DOS", "UEFI", "HTTP", "SATA"], a: 1, e: "UEFI hỗ trợ ổ cứng > 2TB, giao diện trực quan và Secure Boot." }
+        ]
+      },
+      {
+        id: 3, code: "BÀI 03", tag: "Mạng & Cloud",
+        title: "Mạng máy tính, Internet & Điện toán đám mây",
+        sub: "Mô hình OSI 7 tầng & TCP/IP, giao thức TCP vs. UDP, IPv4/IPv6, Wi-Fi & 5G/6G, 5 đặc trưng Cloud chuẩn NIST và mô hình dịch vụ IaaS – PaaS – SaaS.",
+        slides: [
+          { t: "Mô hình OSI 7 tầng & Giao thức TCP/UDP", b: ["Đóng gói PDU: Data → Segment (Transport) → Packet (Network) → Frame (Data Link) → Bits", "TCP: Tin cậy, bắt tay 3 bước (Web, Email) | UDP: Tốc độ cao, độ trễ thấp (Livestream, Game)", "IPv4 (32-bit, ~4,3 tỷ địa chỉ) → IPv6 (128-bit, không gian địa chỉ vô tận cho IoT)"] },
+          { t: "5 Đặc trưng Điện toán đám mây (Chuẩn NIST)", b: ["1. Tự phục vụ theo yêu cầu (On-demand Self-service)", "2. Truy cập mạng rộng rãi (Broad Network Access)", "3. Gom chung tài nguyên (Resource Pooling)", "4. Co giãn linh hoạt siêu tốc (Rapid Elasticity) & 5. Đo lường tính phí (Measured Service)"] },
+          { t: "Mô hình Dịch vụ & Triển khai Cloud", b: ["IaaS (AWS EC2): Thuê hạ tầng ảo | PaaS (Vercel/Heroku): Thuê nền tảng chạy code", "SaaS (Google Workspace, Microsoft 365): Dùng ngay phần mềm qua trình duyệt", "Triển khai: Public Cloud, Private Cloud, Hybrid Cloud và Multi-Cloud"] }
+        ],
+        cards: [
+          ["TCP vs. UDP", "TCP đảm bảo toàn vẹn gói tin; UDP ưu tiên tốc độ thời gian thực."],
+          ["IPv6 (128-bit)", "Thay thế IPv4 đã cạn kiệt, cấp phát địa chỉ cho hàng chục tỷ thiết bị IoT."],
+          ["IaaS – PaaS – SaaS", "IaaS thuê máy chủ ảo; PaaS thuê môi trường deploy; SaaS dùng ứng dụng trọn gói."],
+          ["Hybrid & Multi-Cloud", "Hybrid kết hợp Private + Public; Multi-Cloud dùng nhiều hãng Cloud tránh Vendor Lock-in."]
+        ],
+        notes: [
+          "<strong>Mạng & Kết nối:</strong> Wi-Fi (IEEE 802.11) dùng cơ chế tránh xung đột CSMA/CA; mạng di động tiến hóa từ 4G/5G lên tầm nhìn 6G (1 Tbps, Native AI).",
+          "<strong>Điện toán đám mây:</strong> Chuyển đổi chi phí đầu tư phần cứng ban đầu (CAPEX) sang chi phí vận hành linh hoạt theo mức dùng thực tế (OPEX - Pay-as-you-go)."
+        ],
+        diagram: [
+          { k: "On-Premises", v: "Tự quản lý 100%", c: "bg-slate-700" },
+          { k: "IaaS", v: "Thuê VM & Mạng (EC2)", c: "bg-sky-700" },
+          { k: "PaaS", v: "Đẩy Code chạy ngay", c: "bg-emerald-700" },
+          { k: "SaaS", v: "Dùng App Web trọn gói", c: "bg-purple-700" }
+        ],
+        video: [
+          { t: "00:00", h: "Đóng gói dữ liệu OSI", s: "Dữ liệu ứng dụng được bọc thêm header TCP, IP và MAC thành Segment, Packet và Frame trước khi truyền đi." },
+          { t: "01:45", h: "5 Đặc trưng Cloud NIST", s: "Đám mây cho phép tự khởi tạo máy chủ tức thì và tự động co giãn tài nguyên khi lượng truy cập tăng đột biến." },
+          { t: "03:15", h: "Ví dụ IaaS - PaaS - SaaS", s: "Tự nấu ăn ở bếp thuê là IaaS, gọi đồ giao tận nhà là PaaS, còn ra nhà hàng thưởng thức trọn gói là SaaS." }
+        ],
+        quiz: [
+          { q: "Thứ tự đóng gói đơn vị dữ liệu (PDU) từ tầng Transport xuống tầng Physical là:", o: ["Packet → Segment → Frame → Bits", "Segment → Packet → Frame → Bits", "Frame → Packet → Segment → Bits", "Bits → Frame → Packet → Segment"], a: 1, e: "Transport tạo Segment, Network tạo Packet, Data Link tạo Frame và Physical truyền Bits." },
+          { q: "Giao thức nào phù hợp nhất cho Livestream video trực tiếp nhờ độ trễ thấp?", o: ["TCP", "UDP", "SMTP", "FTP"], a: 1, e: "UDP không mất thời gian bắt tay hay truyền lại gói tin nên đạt tốc độ thời gian thực." },
+          { q: "Mô hình nào cung cấp sẵn môi trường runtime để lập trình viên chỉ cần đẩy code lên chạy?", o: ["IaaS", "PaaS", "SaaS", "LAN"], a: 1, e: "PaaS (Platform as a Service) lo phần hạ tầng và OS, lập trình viên chỉ quản lý mã nguồn." },
+          { q: "Google Docs và Microsoft 365 Online thuộc mô hình dịch vụ đám mây nào?", o: ["IaaS", "PaaS", "SaaS", "Firmware"], a: 2, e: "Đây là phần mềm hoàn chỉnh cung cấp cho người dùng cuối qua trình duyệt (SaaS)." },
+          { q: "Đặc trưng NIST nào cho phép hệ thống Cloud tự tăng thêm máy chủ khi tải cao?", o: ["Rapid Elasticity", "Measured Service", "Static Allocation", "Offline Mode"], a: 0, e: "Rapid Elasticity (Co giãn linh hoạt) tự động mở rộng hoặc thu hẹp tài nguyên theo tải." }
+        ]
+      },
+      {
+        id: 4, code: "BÀI 04", tag: "Văn phòng số",
+        title: "Soạn thảo văn bản & Trình chiếu chuyên nghiệp",
+        sub: "Chuẩn hóa văn bản hành chính/báo cáo bằng Styles, mục lục tự động (TOC), trộn thư (Mail Merge), cộng tác đám mây và nguyên tắc thiết kế Slide thuyết trình ấn tượng.",
+        slides: [
+          { t: "Soạn thảo Văn bản Chuẩn & Tự động hóa", b: ["Sử dụng Heading Styles (Heading 1, 2, 3) để đồng bộ định dạng toàn văn bản", "Tạo Mục lục tự động (Table of Contents) và Danh mục hình ảnh/bảng biểu chỉ với 1 click", "Mail Merge (Trộn thư): Tạo hàng trăm thư mời, giấy chứng nhận cá nhân hóa từ Excel"] },
+          { t: "Cộng tác Thời gian thực & Quản lý Phiên bản", b: ["Google Docs / Word Online: Nhiều thành viên cùng chỉnh sửa, nhận xét (Comments)", "Track Changes (Theo dõi thay đổi) & Version History (Khôi phục phiên bản cũ)", "Xuất bản chuẩn định dạng PDF/A để giữ nguyên phông chữ và bố cục khi in ấn"] },
+          { t: "Nghệ thuật Thiết kế Slide Trình chiếu", b: ["Quy tắc 6x6 (tối đa 6 dòng/slide, 6 từ/dòng) – Tránh nhồi nhét đoạn văn dài", "Tương phản màu sắc cao, tối đa 2 font chữ, ưu tiên biểu đồ và hình ảnh trực quan", "Sử dụng Slide Master để đồng bộ logo, header/footer và hiệu ứng chuyển cảnh tinh tế"] }
+        ],
+        cards: [
+          ["Heading Styles & TOC", "Định dạng cấu trúc chương mục chuẩn giúp sinh mục lục tự động chính xác."],
+          ["Mail Merge (Trộn thư)", "Kết nối văn bản mẫu với danh sách Excel để xuất hàng loạt tài liệu cá nhân hóa."],
+          ["Track Changes", "Ghi nhận mọi thao tác thêm/xóa/sửa để giảng viên hoặc trưởng nhóm duyệt bài."],
+          ["Slide Master & Quy tắc 6x6", "Thiết kế bố cục gốc nhất quán, cô đọng từ khóa thay vì đọc nguyên văn bản."]
+        ],
+        notes: [
+          "<strong>Thể thức văn bản:</strong> Căn lề chuẩn (Trái 3cm, Phải 1.5–2cm, Trên/Dưới 2cm), giãn dòng 1.15–1.5 lines, sử dụng Page Break (Ctrl+Enter) thay vì nhấn Enter nhiều lần.",
+          "<strong>Thuyết trình hiệu quả:</strong> Slide là công cụ hỗ trợ thị giác cho người nghe, không phải kịch bản để người thuyết trình đọc thuộc lòng."
+        ],
+        diagram: [
+          { k: "1. Cấu trúc", v: "Áp dụng Heading Styles", c: "bg-indigo-700" },
+          { k: "2. Tự động", v: "Sinh Mục lục & Mail Merge", c: "bg-sky-700" },
+          { k: "3. Cộng tác", v: "Track Changes & Cloud", c: "bg-emerald-700" },
+          { k: "4. Trình chiếu", v: "Slide Master & Quy tắc 6x6", c: "bg-amber-700" }
+        ],
+        video: [
+          { t: "00:00", h: "Sức mạnh của Heading Styles", s: "Thay vì bôi đen chỉnh từng tiêu đề thủ công, dùng Styles giúp bạn đổi giao diện cả tài liệu 100 trang trong 2 giây." },
+          { t: "01:40", h: "Tự động hóa với Mail Merge", s: "Kết nối bảng danh sách sinh viên từ Excel sang Word để tự động điền họ tên, mã số và gửi email hàng loạt." },
+          { t: "03:10", h: "Thiết kế Slide chuẩn chuyên gia", s: "Áp dụng Slide Master, sơ đồ hóa thông tin và giữ tỷ lệ chữ tối giản giúp khán giả tập trung vào thông điệp chính." }
+        ],
+        quiz: [
+          { q: "Tính năng nào trong MS Word / Google Docs giúp tạo Mục lục tự động (Table of Contents) chính xác?", o: ["WordArt", "Heading Styles (Heading 1, 2, 3)", "Drop Cap", "Watermark"], a: 1, e: "Hệ thống dựa vào các cấp độ Heading Styles để tự động trích xuất tiêu đề và số trang vào Mục lục." },
+          { q: "Công cụ nào cho phép tạo hàng trăm giấy mời hoặc phiếu điểm cá nhân hóa từ một danh sách Excel?", o: ["Macro Recorder", "Mail Merge (Trộn thư)", "SmartArt", "Track Changes"], a: 1, e: "Mail Merge kết hợp tài liệu mẫu với nguồn dữ liệu bảng để tạo bản in/email riêng cho từng người." },
+          { q: "Ý nghĩa của 'Quy tắc 6x6' khi thiết kế slide thuyết trình là gì?", o: ["Mỗi bài thuyết trình chỉ có đúng 6 slide", "Mỗi slide tối đa khoảng 6 dòng gạch đầu dòng và mỗi dòng khoảng 6 từ khóa cô đọng", "Dùng cỡ chữ số 6", "Chèn 6 hiệu ứng chuyển động trên mỗi chữ"], a: 1, e: "Quy tắc 6x6 giúp slide thông thoáng, dễ đọc, tránh biến slide thành trang văn bản dày đặc." },
+          { q: "Tính năng nào trong PowerPoint giúp chỉnh sửa một lần để áp dụng logo, font chữ và màu nền cho toàn bộ các slide?", o: ["Slide Sorter", "Slide Master", "Reading View", "Animation Painter"], a: 1, e: "Slide Master quản lý bố cục và định dạng gốc cho toàn bộ bài trình chiếu." },
+          { q: "Để ngắt sang trang mới sạch sẽ mà không bị xô lệch bố cục khi thêm nội dung phía trên, ta nên dùng:", o: ["Nhấn phím Enter 15 lần", "Page Break (Ctrl + Enter)", "Nhấn phím Spacebar liên tục", "Chèn bảng rỗng"], a: 1, e: "Page Break tạo dấu ngắt trang cứng, đảm bảo tiêu đề chương mới luôn bắt đầu ở đầu trang." }
+        ]
+      },
+      {
+        id: 5, code: "BÀI 05", tag: "Dữ liệu & Bảng tính",
+        title: "Bảng tính thông minh & Phân tích dữ liệu",
+        sub: "Tư duy quản trị dữ liệu dạng bảng, hàm xử lý điều kiện & tra cứu nâng cao (IF, SUMIFS, COUNTIFS, XLOOKUP/INDEX-MATCH), PivotTable và trực quan hóa Dashboard.",
+        slides: [
+          { t: "Chuẩn hóa Dữ liệu & Địa chỉ Ô", b: ["Nguyên tắc bảng chuẩn: 1 hàng tiêu đề duy nhất, không gộp ô (Merge) trong vùng dữ liệu", "Địa chỉ tương đối (A1) vs. Địa chỉ tuyệt đối ($A$1 - phím F4) khi sao chép công thức", "Làm sạch dữ liệu: Xóa trùng lặp (Remove Duplicates), Text to Columns, TRIM/PROPER"] },
+          { t: "Bộ Hàm Phân tích & Tra cứu Cốt lõi", b: ["Thống kê có điều kiện: SUMIFS, COUNTIFS, AVERAGEIFS", "Logic kết hợp: IF lồng nhau, IFS, AND, OR, IFERROR xử lý lỗi #N/A", "Tra cứu hiện đại: XLOOKUP và INDEX + MATCH (linh hoạt hơn VLOOKUP truyền thống)"] },
+          { t: "PivotTable, PivotChart & AI trong Bảng tính", b: ["PivotTable: Tổng hợp, xoay chiều và phân nhóm hàng chục nghìn dòng dữ liệu không cần viết hàm", "Conditional Formatting (Định dạng có điều kiện) & Data Validation (Tạo danh sách thả xuống)", "Ứng dụng AI (Copilot / Gemini in Sheets): Sinh công thức tự động và phát hiện xu hướng"] }
+        ],
+        cards: [
+          ["Địa chỉ tuyệt đối ($A$1)", "Cố định dòng và cột khi kéo sao chép công thức sang các ô khác."],
+          ["SUMIFS / COUNTIFS", "Tính tổng và đếm số lượng bản ghi thỏa mãn đồng thời nhiều tiêu chí."],
+          ["XLOOKUP / INDEX-MATCH", "Tra cứu dữ liệu hai chiều chính xác, không bị lỗi khi chèn thêm cột."],
+          ["PivotTable & Dashboard", "Công cụ kéo-thả tổng hợp dữ liệu lớn thành báo cáo trực quan tức thì."]
+        ],
+        notes: [
+          "<strong>Bẫy thường gặp:</strong> Gộp ô (Merge Cells) trong vùng dữ liệu thô sẽ làm hỏng bộ lọc Filter và PivotTable.",
+          "<strong>XLOOKUP vs. VLOOKUP:</strong> XLOOKUP tìm được cả bên trái lẫn bên phải cột khóa và mặc định tìm kiếm chính xác (Exact Match)."
+        ],
+        diagram: [
+          { k: "1. Thu thập", v: "Data Validation & Nhập chuẩn", c: "bg-slate-700" },
+          { k: "2. Làm sạch", v: "TRIM • Remove Duplicates", c: "bg-sky-700" },
+          { k: "3. Tính toán", v: "SUMIFS • XLOOKUP • IFERROR", c: "bg-indigo-700" },
+          { k: "4. Trực quan", v: "PivotTable & Dashboard", c: "bg-emerald-700" }
+        ],
+        video: [
+          { t: "00:00", h: "Tư duy bảng dữ liệu sạch", s: "Dữ liệu chuẩn dạng phẳng với tiêu đề rõ ràng và không gộp ô là nền tảng cho mọi phép phân tích." },
+          { t: "01:45", h: "Làm chủ XLOOKUP và SUMIFS", s: "Kết hợp SUMIFS thống kê nhiều điều kiện và XLOOKUP tra cứu giúp tự động hóa báo cáo doanh thu." },
+          { t: "03:15", h: "Xây dựng Dashboard với PivotTable", s: "Chỉ cần kéo thả trường dữ liệu vào Rows, Columns và Values để tạo biểu đồ động chuyên nghiệp." }
+        ],
+        quiz: [
+          { q: "Ký hiệu '$' trong công thức Excel (ví dụ $B$2) có tác dụng gì?", o: ["Định dạng tiền tệ Đô la", "Cố định địa chỉ tuyệt đối của cột B và hàng 2 khi sao chép công thức", "Báo lỗi cú pháp công thức", "Chuyển số thành văn bản"], a: 1, e: "Dấu $ khóa cố định tham chiếu cột/hàng khi kéo công thức sang vùng ô khác." },
+          { q: "Hàm nào dùng để tính tổng doanh thu của mặt hàng 'Laptop' tại khu vực 'Hà Nội'?", o: ["SUM", "SUMIF", "SUMIFS", "COUNTIFS"], a: 2, e: "SUMIFS cho phép tính tổng dựa trên từ 2 điều kiện trở lên." },
+          { q: "Ưu điểm vượt trội của XLOOKUP so với VLOOKUP truyền thống là gì?", o: ["Có thể tra cứu dữ liệu ở cột nằm bên trái cột khóa và mặc định tìm chính xác", "Chỉ tìm được số nguyên", "Không cần chọn vùng dữ liệu", "Chỉ chạy trên hệ điều hành Linux"], a: 0, e: "XLOOKUP khắc phục nhược điểm chỉ tìm từ trái sang phải của VLOOKUP." },
+          { q: "Công cụ nào trong Excel/Sheets cho phép tổng hợp và phân tích nhanh bảng dữ liệu lớn bằng cách kéo thả mà không cần viết công thức?", o: ["Goal Seek", "PivotTable", "Spell Check", "Page Setup"], a: 1, e: "PivotTable tổng hợp, nhóm và xoay chiều dữ liệu lớn cực kỳ nhanh chóng." },
+          { q: "Tính năng Data Validation thường được dùng để làm gì?", o: ["Vẽ biểu đồ hình tròn", "Tạo danh sách thả xuống (Dropdown list) và kiểm soát tính hợp lệ của dữ liệu nhập vào ô", "Mã hóa mật khẩu file", "In trang tính ra giấy"], a: 1, e: "Data Validation ngăn người dùng nhập sai định dạng và tạo menu chọn chuẩn hóa." }
+        ]
+      },
+      {
+        id: 6, code: "BÀI 06", tag: "AI & Machine Learning",
+        title: "Nhập môn Trí tuệ nhân tạo (AI) & Machine Learning",
+        sub: "Lịch sử phát triển AI từ Turing Test 1950 đến Transformer 2017, phân cấp AI – Machine Learning – Deep Learning, 3 phương pháp học máy và phân loại ANI – AGI – ASI.",
+        slides: [
+          { t: "Mối quan hệ AI – Machine Learning – Deep Learning", b: ["AI (Trí tuệ nhân tạo): Khả năng máy móc mô phỏng trí thông minh con người", "Machine Learning (Học máy): Máy tự học quy luật từ dữ liệu thay vì lập trình cứng từng luật", "Deep Learning (Học sâu): Sử dụng Mạng nơ-ron nhân tạo nhiều lớp (Neural Networks)"] },
+          { t: "3 Phương pháp Học máy (Machine Learning)", b: ["1. Học có giám sát (Supervised Learning): Dữ liệu có gắn nhãn (Dự đoán giá nhà, phân loại spam)", "2. Học không giám sát (Unsupervised Learning): Dữ liệu chưa nhãn (Phân cụm khách hàng)", "3. Học tăng cường (Reinforcement Learning): Học qua thử-sai và phần thưởng (Xe tự hành, AlphaGo)"] },
+          { t: "3 Cấp độ AI & Quy trình Xây dựng Mô hình", b: ["ANI (AI Hẹp - hiện tại) → AGI (AI Tổng quát ngang người) → ASI (Siêu trí tuệ)", "Quy trình ML: Thu thập dữ liệu → Làm sạch → Chia Train/Test → Huấn luyện → Đánh giá & Triển khai", "Nguyên tắc vàng: Garbage In, Garbage Out (Dữ liệu sạch quyết định chất lượng AI)"] }
+        ],
+        cards: [
+          ["Machine Learning", "Thuật toán tự tìm ra quy luật từ dữ liệu lịch sử để dự đoán trên dữ liệu mới."],
+          ["Supervised vs. Unsupervised", "Supervised dùng dữ liệu có nhãn (Label); Unsupervised tự tìm cấu trúc ẩn trong dữ liệu thô."],
+          ["Deep Learning & Transformer", "Mạng nơ-ron sâu; kiến trúc Transformer (2017) là nền tảng của ChatGPT/Gemini."],
+          ["ANI – AGI – ASI", "Hiện tại nhân loại đang ở kỷ nguyên ANI (AI chuyên biệt từng nhiệm vụ)."]
+        ],
+        notes: [
+          "<strong>Lịch sử cột mốc:</strong> 1950 Phép thử Turing → 1956 Hội nghị Dartmouth → 2012 Bùng nổ Deep Learning (AlexNet) → 2017 Kiến trúc Transformer khai sinh kỷ nguyên GenAI.",
+          "<strong>Tác nhân thông minh (Intelligent Agent):</strong> Cảm nhận môi trường qua Sensors → Suy luận → Hành động qua Actuators."
+        ],
+        diagram: [
+          { k: "AI (Rộng nhất)", v: "Hệ thống mô phỏng trí tuệ", c: "bg-indigo-700" },
+          { k: "Machine Learning", v: "Học từ dữ liệu (Supervised/Unsupervised)", c: "bg-sky-700" },
+          { k: "Deep Learning", v: "Mạng nơ-ron sâu (CNN, RNN, Transformer)", c: "bg-emerald-700" },
+          { k: "Generative AI", v: "Sáng tạo văn bản, ảnh, mã nguồn", c: "bg-purple-700" }
+        ],
+        video: [
+          { t: "00:00", h: "AI, ML và Deep Learning", s: "AI là khái niệm bao trùm, Machine Learning là phương pháp học từ dữ liệu, còn Deep Learning dùng mạng nơ-ron nhiều lớp." },
+          { t: "01:50", h: "3 Nhánh của Machine Learning", s: "Học có giám sát cần đáp án mẫu, học không giám sát tự gom nhóm dữ liệu, còn học tăng cường tối ưu qua phần thưởng." },
+          { t: "03:20", h: "Tại sao Dữ liệu là Vua?", s: "Thuật toán tốt đến đâu cũng sẽ dự đoán sai nếu dữ liệu huấn luyện bị nhiễu, thiếu hoặc thiên lệch." }
+        ],
+        quiz: [
+          { q: "Mối quan hệ bao hàm đúng giữa AI, Machine Learning (ML) và Deep Learning (DL) là:", o: ["DL chứa ML, ML chứa AI", "AI chứa ML, và ML chứa DL", "Ba khái niệm hoàn toàn tách biệt", "ML chỉ dùng cho phần cứng"], a: 1, e: "Deep Learning là một nhánh chuyên sâu của Machine Learning, và Machine Learning là một lĩnh vực cốt lõi của AI." },
+          { q: "Bài toán phân loại email là 'Thư rác (Spam)' hay 'Bình thường' dựa trên tập email đã được gắn nhãn mẫu thuộc loại học máy nào?", o: ["Học có giám sát (Supervised Learning)", "Học không giám sát (Unsupervised Learning)", "Học tăng cường (Reinforcement Learning)", "Lập trình tuyến tính cứng"], a: 0, e: "Dữ liệu đầu vào có sẵn nhãn kết quả (Spam / Không Spam) là đặc trưng của Supervised Learning." },
+          { q: "Kiến trúc mạng nơ-ron nào ra đời năm 2017 đã tạo nên cuộc cách mạng cho các mô hình ngôn ngữ lớn (LLM)?", o: ["Perceptron đơn lớp", "Transformer", "Cây quyết định đơn giản", "Hồi quy tuyến tính"], a: 1, e: "Kiến trúc Transformer với cơ chế Self-Attention là nền tảng của GPT, Gemini, Claude." },
+          { q: "Tất cả các ứng dụng AI phổ biến hiện nay (nhận diện khuôn mặt, dịch máy, chatbot) thuộc cấp độ nào?", o: ["ANI (AI Hẹp)", "AGI (AI Tổng quát)", "ASI (Siêu AI)", "AI có ý thức tự thân"], a: 0, e: "Hiện tại chúng ta đang ở giai đoạn ANI – AI thực hiện xuất sắc các nhiệm vụ chuyên biệt." },
+          { q: "Trong quy trình Machine Learning, việc chia dữ liệu thành tập Train và tập Test nhằm mục đích gì?", o: ["Giảm dung lượng ổ cứng", "Đánh giá khả năng tổng quát hóa của mô hình trên dữ liệu mới chưa từng thấy", "Xóa bớt dữ liệu quan trọng", "Tăng tốc độ mạng Internet"], a: 1, e: "Tập Test giúp kiểm tra xem mô hình có học vẹt (Overfitting) hay hoạt động tốt trên dữ liệu thực tế." }
+        ]
+      },
+      {
+        id: 7, code: "BÀI 07", tag: "Prompt & GenAI",
+        title: "Kỹ thuật Prompt Engineering & Ứng dụng AI tạo sinh",
+        sub: "Cơ chế hoạt động của AI Tạo sinh (Generative AI), công thức viết Prompt chuẩn 6 thành phần, kỹ thuật Zero-shot, Few-shot, Chain-of-Thought và kiểm soát ảo giác AI.",
+        slides: [
+          { t: "AI Tạo sinh (Generative AI) & Mô hình Ngôn ngữ Lớn", b: ["GenAI có khả năng tạo ra nội dung mới: Văn bản, Mã nguồn, Hình ảnh, Âm thanh, Video", "LLM hoạt động dựa trên Tokenization và dự đoán xác suất token tiếp theo theo ngữ cảnh", "Hạn chế cần lưu ý: Ảo giác thông tin (Hallucination) và giới hạn kiến thức thời gian"] },
+          { t: "Công thức Viết Prompt Hoàn Chỉnh (6 Yếu tố)", b: ["1. Role (Vai trò): Định vị chuyên gia cho AI", "2. Context (Bối cảnh) + 3. Task (Nhiệm vụ cụ thể)", "4. Few-shot (Ví dụ mẫu) + 5. Constraints (Ràng buộc) + 6. Output Format (Định dạng)"] },
+          { t: "Kỹ thuật Nâng cao & Ứng dụng Thực chiến", b: ["Chain-of-Thought (CoT): Yêu cầu AI 'suy nghĩ từng bước' (Step-by-step) cho bài toán logic/code", "Ứng dụng: Lập trình & gỡ lỗi (Vibe-coding), tóm tắt tài liệu, phân tích dữ liệu, sáng tạo slide", "Nguyên tắc Human-in-the-loop: Con người luôn kiểm chứng kết quả cuối cùng"] }
+        ],
+        cards: [
+          ["Prompt Engineering", "Nghệ thuật thiết kế câu lệnh rõ ràng, có cấu trúc để điều hướng AI tạo đầu ra chính xác."],
+          ["Few-shot Prompting", "Cung cấp 2–3 ví dụ mẫu đầu vào/đầu ra trong prompt để AI bắt chước đúng định dạng."],
+          ["Chain-of-Thought (CoT)", "Kích thích mô hình lập luận từng bước trước khi đưa ra đáp án cuối cùng."],
+          ["Hallucination (Ảo giác AI)", "Hiện tượng AI tự tin tạo ra thông tin sai sự thật hoặc trích dẫn không có thật."]
+        ],
+        notes: [
+          "<strong>Mẹo tối ưu Prompt:</strong> Chia nhỏ yêu cầu phức tạp thành nhiều lượt hội thoại (Prompt Chaining) thay vì dồn 10 yêu cầu vào một câu duy nhất.",
+          "<strong>Kiểm soát ảo giác:</strong> Cung cấp tài liệu nguồn trực tiếp vào ngữ cảnh (RAG / đính kèm file) và yêu cầu AI chỉ trả lời dựa trên tài liệu đó."
+        ],
+        diagram: [
+          { k: "1. Role & Context", v: "Đóng vai & Bối cảnh", c: "bg-indigo-700" },
+          { k: "2. Task & CoT", v: "Nhiệm vụ & Suy luận từng bước", c: "bg-sky-700" },
+          { k: "3. Few-shot", v: "Đưa ví dụ mẫu chuẩn", c: "bg-emerald-700" },
+          { k: "4. Format & Check", v: "Bảng/JSON & Kiểm chứng", c: "bg-amber-700" }
+        ],
+        video: [
+          { t: "00:00", h: "GenAI tạo ra nội dung thế nào?", s: "Mô hình ngôn ngữ lớn chia văn bản thành các Token và tính toán xác suất từ tiếp theo dựa trên ngữ cảnh hàng tỷ tham số." },
+          { t: "01:45", h: "Công thức Prompt 6 thành phần", s: "Kết hợp Vai trò, Bối cảnh, Nhiệm vụ, Ví dụ mẫu, Ràng buộc và Định dạng giúp câu trả lời sắc bén gấp nhiều lần." },
+          { t: "03:15", h: "Kỹ thuật Chain-of-Thought", s: "Chỉ cần thêm cụm từ 'Hãy phân tích từng bước một', độ chính xác của AI khi giải toán và viết code tăng lên rõ rệt." }
+        ],
+        quiz: [
+          { q: "Kỹ thuật nào cung cấp cho AI một vài ví dụ minh họa cặp đầu vào – đầu ra ngay trong câu lệnh để AI làm theo?", o: ["Zero-shot Prompting", "Few-shot Prompting", "Overclocking", "Defragmentation"], a: 1, e: "Few-shot Prompting đưa ví dụ mẫu giúp mô hình hiểu chính xác cấu trúc và phong cách mong muốn." },
+          { q: "Kỹ thuật 'Chain-of-Thought (CoT)' yêu cầu mô hình AI làm gì?", o: ["Trả lời ngắn nhất có thể trong 1 từ", "Trình bày quá trình suy luận logic từng bước trước khi kết luận", "Chỉ trả lời bằng hình ảnh", "Tự động tắt kết nối mạng"], a: 1, e: "Chain-of-Thought khuyến khích AI phân rã lập luận từng bước, giảm sai sót logic." },
+          { q: "Thuật ngữ 'Hallucination' (Ảo giác) trong AI tạo sinh dùng để chỉ hiện tượng nào?", o: ["AI tự động nâng cấp phần cứng", "AI tạo ra thông tin nghe có vẻ hợp lý nhưng thực tế sai sự thật hoặc bịa đặt", "AI bị nhiễm virus máy tính", "AI dịch đúng 100% mọi ngôn ngữ"], a: 1, e: "Hallucination xảy ra khi mô hình dự đoán chuỗi từ trôi chảy nhưng thiếu căn cứ thực tế." },
+          { q: "Thành phần nào trong Prompt giúp định hướng góc nhìn chuyên môn cho câu trả lời của AI?", o: ["Role (Đóng vai)", "Font Size", "Screen Brightness", "IP Address"], a: 0, e: "Gán vai trò (ví dụ: 'Bạn là giảng viên Khoa học dữ liệu...') giúp AI chọn lọc thuật ngữ và chiều sâu phù hợp." },
+          { q: "Biện pháp tốt nhất để giảm thiểu rủi ro sai lệch thông tin khi dùng AI viết báo cáo học thuật là:", o: ["Tin tưởng tuyệt đối không cần đọc lại", "Cung cấp nguồn tài liệu tin cậy và luôn kiểm chứng lại các số liệu, trích dẫn (Human-in-the-loop)", "Yêu cầu AI viết càng dài càng tốt", "Dùng nhiều từ viết tắt"], a: 1, e: "Con người luôn giữ vai trò kiểm duyệt cuối cùng và đối chiếu nguồn gốc thông tin." }
+        ]
+      },
+      {
+        id: 8, code: "BÀI 08", tag: "Bảo mật & Đạo đức số",
+        title: "An toàn thông tin, Bảo mật & Đạo đức số",
+        sub: "Mô hình tam giác bảo mật CIA, nhận diện tấn công Phishing, Ransomware, Deepfake, bảo vệ dữ liệu cá nhân (quy tắc 3-2-1, MFA) và đạo đức ứng dụng AI.",
+        slides: [
+          { t: "Tam giác Bảo mật Thông tin (CIA Triad)", b: ["Confidentiality (Tính bảo mật): Mã hóa (AES/TLS), phân quyền chống truy cập trái phép", "Integrity (Tính toàn vẹn): Hàm băm (Hash), chữ ký số đảm bảo dữ liệu không bị sửa đổi", "Availability (Tính sẵn sàng): Dự phòng máy chủ, chống tấn công từ chối dịch vụ (DDoS)"] },
+          { t: "Nhận diện Tấn công Mạng & Rủi ro Kỷ nguyên AI", b: ["Phishing & Social Engineering: Giả mạo email/website ngân hàng đánh cắp mật khẩu, OTP", "Ransomware: Mã độc mã hóa toàn bộ dữ liệu trên ổ cứng và đòi tiền chuộc", "Rủi ro AI mới: Lừa đảo cuộc gọi Deepfake giả khuôn mặt/giọng nói & rò rỉ dữ liệu qua Prompt"] },
+          { t: "Lá chắn Phòng vệ & Đạo đức Công dân số", b: ["Mật khẩu mạnh độc nhất + Trình quản lý mật khẩu + Xác thực đa yếu tố (MFA/2FA)", "Quy tắc Backup 3-2-1: 3 bản sao – 2 loại phương tiện – 1 bản lưu ngoại tuyến/đám mây tách biệt", "Đạo đức số: Tôn trọng bản quyền phần mềm, không gian lận học thuật bằng AI, bảo vệ dữ liệu cá nhân"] }
+        ],
+        cards: [
+          ["Mô hình CIA", "Confidentiality (Bảo mật) – Integrity (Toàn vẹn) – Availability (Sẵn sàng)."],
+          ["Phishing & Deepfake", "Lừa đảo tâm lý qua link giả hoặc video/giọng nói AI giả mạo người thân, lãnh đạo."],
+          ["Quy tắc Backup 3-2-1", "3 bản sao dữ liệu, trên 2 phương tiện khác nhau, có 1 bản lưu tách biệt ngoại tuyến."],
+          ["Xác thực đa yếu tố (MFA)", "Kết hợp Mật khẩu + Mã OTP/Authenticator/Sinh trắc học để bảo vệ tài khoản."]
+        ],
+        notes: [
+          "<strong>An toàn khi dùng AI:</strong> Tuyệt đối không dán mật khẩu, khóa API, mã nguồn bí mật của công ty hoặc dữ liệu cá nhân (CCCD, hồ sơ bệnh án) lên các chatbot AI công cộng.",
+          "<strong>Bản quyền số:</strong> Nói không với phần mềm crack (nguy cơ cao chứa Trojan/Ransomware); tuân thủ giấy phép mã nguồn mở (MIT, Apache, GPL) và trích dẫn nguồn rõ ràng."
+        ],
+        diagram: [
+          { k: "C - Confidentiality", v: "Mã hóa & Phân quyền", c: "bg-indigo-700" },
+          { k: "I - Integrity", v: "Chữ ký số & Hash", c: "bg-emerald-700" },
+          { k: "A - Availability", v: "Backup 3-2-1 & Chống DDoS", c: "bg-amber-700" },
+          { k: "Đạo đức & Pháp lý", v: "Bảo vệ dữ liệu & Bản quyền", c: "bg-rose-700" }
+        ],
+        video: [
+          { t: "00:00", h: "Tam giác bảo mật CIA", s: "Bảo mật, Toàn vẹn và Sẵn sàng là ba trụ cột sống còn bảo vệ mọi hệ thống thông tin." },
+          { t: "01:45", h: "Cảnh giác Phishing & Deepfake", s: "Luôn kiểm tra kỹ tên miền website, xác minh qua kênh độc lập khi nhận cuộc gọi chuyển tiền bất thường và bật 2FA." },
+          { t: "03:15", h: "Trách nhiệm Công dân số", s: "Sử dụng AI minh bạch, tôn trọng sở hữu trí tuệ và bảo vệ dữ liệu cá nhân là chuẩn mực của sinh viên công nghệ." }
+        ],
+        quiz: [
+          { q: "Ba yếu tố cốt lõi của mô hình bảo mật thông tin CIA Triad là gì?", o: ["Control, Internet, Access", "Confidentiality (Bảo mật), Integrity (Toàn vẹn), Availability (Sẵn sàng)", "Cloud, IoT, AI", "Copy, Insert, Append"], a: 1, e: "CIA Triad gồm Confidentiality, Integrity và Availability." },
+          { q: "Hình thức lừa đảo gửi email hoặc tin nhắn giả mạo ngân hàng kèm đường link lạ để đánh cắp mật khẩu gọi là gì?", o: ["Phishing", "Overclocking", "Load Balancing", "Compilation"], a: 0, e: "Phishing khai thác sự mất cảnh giác của người dùng qua thông điệp giả mạo uy tín." },
+          { q: "Quy tắc sao lưu dữ liệu an toàn '3-2-1' có nghĩa là gì?", o: ["3 mật khẩu, 2 email, 1 điện thoại", "3 bản sao dữ liệu, lưu trên 2 loại thiết bị khác nhau, có 1 bản đặt tách biệt/ngoại tuyến", "Sao lưu 3 năm 1 lần", "Chỉ lưu 1 bản trên ổ C"], a: 1, e: "Quy tắc 3-2-1 đảm bảo khôi phục được dữ liệu ngay cả khi bị hỏng ổ cứng hoặc nhiễm Ransomware." },
+          { q: "Hành động nào sau đây gây rủi ro mất an toàn thông tin nghiêm trọng khi sử dụng AI?", o: ["Dùng AI giải thích một thuật toán sắp xếp cơ bản", "Sao chép mã nguồn nội bộ và danh sách thông tin cá nhân khách hàng dán vào AI công cộng", "Dùng AI kiểm tra lỗi chính tả tiếng Anh", "Yêu cầu AI gợi ý cấu trúc bài thuyết trình"], a: 1, e: "Đưa dữ liệu nhạy cảm lên AI công cộng gây nguy cơ rò rỉ bí mật kinh doanh và vi phạm bảo vệ dữ liệu cá nhân." },
+          { q: "Giải pháp nào giúp ngăn chặn kẻ gian đăng nhập tài khoản ngay cả khi chúng đã lấy cắp được mật khẩu của bạn?", o: ["Đặt mật khẩu là 123456", "Bật xác thực đa yếu tố (MFA / 2FA)", "Tắt màn hình máy tính", "Dùng chung tài khoản với bạn bè"], a: 1, e: "MFA/2FA yêu cầu thêm yếu tố xác minh thứ hai (ứng dụng Authenticator, khóa vật lý, sinh trắc học)." }
+        ]
+      }
+    ];
+
+    // =========================================================================
+    // QUẢN LÝ TRẠNG THÁI & LOCALSTORAGE
+    // =========================================================================
+    const K = { THEME: 'c109_theme', DONE: 'c109_done', NOTES: 'c109_notes', QUIZ: 'c109_quiz', CUR: 'c109_cur' };
+    let st = {
+      curId: +localStorage.getItem(K.CUR) || 1,
+      tab: 'lecture',
+      slide: 0,
+      vidIdx: 0,
+      playing: false,
+      query: '',
+      filter: 'all',
+      done: JSON.parse(localStorage.getItem(K.DONE) || '[]'),
+      notes: JSON.parse(localStorage.getItem(K.NOTES) || '{}'),
+      scores: JSON.parse(localStorage.getItem(K.QUIZ) || '{}'),
+      ans: {},
+      submitted: false
+    };
+    let vidTimer = null;
+
+    const $ = id => document.getElementById(id);
+    const curLesson = () => LESSONS.find(l => l.id === st.curId) || LESSONS[0];
+
+    function toast(msg, type = 'info') {
+      const el = document.createElement('div');
+      const bg = type === 'ok' ? 'bg-emerald-600' : type === 'warn' ? 'bg-amber-600' : 'bg-slate-900 dark:bg-brand-600';
+      el.className = `${bg} text-white px-4 py-2.5 rounded-xl shadow-lg text-xs sm:text-sm font-medium pointer-events-auto fade-in`;
+      el.textContent = msg;
+      $('toast-box').appendChild(el);
+      setTimeout(() => { el.style.opacity = '0'; setTimeout(() => el.remove(), 250); }, 2500);
+    }
+
+    function downloadFile(name, text) {
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(new Blob([text], { type: 'text/plain;charset=utf-8' }));
+      a.download = name;
+      a.click();
+      URL.revokeObjectURL(a.href);
+      toast(`Đã tải xuống: ${name}`, 'ok');
+    }
+
+    function updateStats() {
+      const pct = Math.round((st.done.length / LESSONS.length) * 100);
+      $('prog-text').textContent = `${st.done.length}/${LESSONS.length} (${pct}%)`;
+      $('prog-bar').style.width = `${pct}%`;
+      const vals = Object.values(st.scores);
+      $('avg-score').textContent = vals.length ? `${Math.round(vals.reduce((a, b) => a + b, 0) / vals.length)}% (${vals.length}/8 bài)` : 'Chưa thi';
+    }
+
+    function renderNav() {
+      const q = st.query.trim().toLowerCase();
+      const list = LESSONS.filter(l => {
+        const isDone = st.done.includes(l.id);
+        if (st.filter === 'done' && !isDone) return false;
+        if (st.filter === 'todo' && isDone) return false;
+        if (!q) return true;
+        return [l.title, l.sub, l.tag, ...l.notes, ...l.cards.flat()].join(' ').toLowerCase().includes(q);
+      });
+      $('nav-count').textContent = `${list.length} bài`;
+      $('nav-list').innerHTML = list.length ? list.map(l => {
+        const active = l.id === st.curId, done = st.done.includes(l.id), sc = st.scores[l.id];
+        return `
+          <button onclick="selectLesson(${l.id})" class="w-full text-left p-3 rounded-2xl border transition flex items-start gap-3 ${active ? 'bg-brand-50 dark:bg-brand-950/60 border-brand-300 dark:border-brand-700' : 'border-transparent hover:bg-slate-100 dark:hover:bg-slate-800/60'}">
+            <span class="w-7 h-7 rounded-xl flex items-center justify-center text-xs font-extrabold shrink-0 mt-0.5 ${done ? 'bg-emerald-500 text-white' : active ? 'bg-brand-600 text-white' : 'bg-slate-200 dark:bg-slate-800'}">${done ? '✓' : l.id}</span>
+            <div class="min-w-0 flex-1">
+              <div class="flex justify-between items-center text-[10px]">
+                <span class="font-bold uppercase ${active ? 'text-brand-600 dark:text-brand-400' : 'text-slate-400'}">${l.code}</span>
+                ${sc !== undefined ? `<span class="px-1.5 rounded bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 font-mono font-bold">Quiz ${sc}%</span>` : ''}
+              </div>
+              <p class="text-xs font-bold leading-snug line-clamp-2 mt-0.5">${l.title}</p>
+            </div>
+          </button>`;
+      }).join('') : `<p class="p-6 text-center text-xs text-slate-500">Không tìm thấy bài học phù hợp.</p>`;
+    }
+
+    // =========================================================================
+    // RENDER 4 TAB NỘI DUNG
+    // =========================================================================
+    function renderLecture(l) {
+      const sl = l.slides[st.slide] || l.slides[0];
+      return `
+        <div class="space-y-6">
+          <div class="rounded-3xl bg-gradient-to-br from-slate-900 via-slate-900 to-brand-950 text-white p-5 sm:p-6 shadow-md border border-slate-800">
+            <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+              <div class="flex items-center gap-2 text-xs">
+                <span class="px-2.5 py-1 rounded-lg bg-brand-500/20 text-brand-300 font-bold">SLIDE TRÌNH CHIẾU</span>
+                <span class="font-mono text-slate-400">Trang ${st.slide + 1}/${l.slides.length}</span>
+              </div>
+              <button onclick="exportMd()" class="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-semibold transition">⬇️ Tải bài giảng (.md)</button>
+            </div>
+            <div class="min-h-[185px] flex flex-col justify-between bg-white/5 rounded-2xl p-5 border border-white/10">
+              <div>
+                <h4 class="text-base sm:text-lg font-extrabold text-cyan-300 mb-3">${sl.t}</h4>
+                <ul class="space-y-2 text-sm text-slate-100">
+                  ${sl.b.map(x => `<li class="flex gap-2"><span class="text-brand-400 font-bold">▸</span><span>${x}</span></li>`).join('')}
+                </ul>
+              </div>
+              <div class="mt-5 pt-3 border-t border-white/10 flex items-center justify-between">
+                <button onclick="moveSlide(-1)" ${st.slide === 0 ? 'disabled' : ''} class="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 disabled:opacity-30 text-xs font-bold">◀ Trước</button>
+                <div class="flex gap-1.5">${l.slides.map((_, i) => `<button onclick="goSlide(${i})" class="h-2 rounded-full transition-all ${i === st.slide ? 'w-6 bg-cyan-400' : 'w-2 bg-white/30'}"></button>`).join('')}</div>
+                <button onclick="moveSlide(1)" ${st.slide === l.slides.length - 1 ? 'disabled' : ''} class="px-3 py-1.5 rounded-xl bg-brand-600 hover:bg-brand-500 disabled:opacity-30 text-xs font-bold">Tiếp ▶</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+            ${l.cards.map(([k, v]) => `
+              <div class="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4">
+                <div class="text-xs font-extrabold uppercase text-brand-600 dark:text-brand-400 mb-1">${k}</div>
+                <p class="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">${v}</p>
+              </div>`).join('')}
+          </div>
+
+          <div class="rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 sm:p-6">
+            <h3 class="text-base font-extrabold mb-3">📚 Kiến thức trọng tâm cần nhớ</h3>
+            <ul class="space-y-2.5 text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
+              ${l.notes.map(n => `<li class="flex gap-2.5"><span class="w-1.5 h-1.5 rounded-full bg-brand-500 mt-2 shrink-0"></span><span>${n}</span></li>`).join('')}
+            </ul>
+          </div>
+        </div>`;
+    }
+
+    function renderDiagram(l) {
+      return `
+        <div class="rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 sm:p-6 space-y-5">
+          <div>
+            <h3 class="text-base sm:text-lg font-extrabold">🖼️ Sơ đồ Kiến trúc & Luồng xử lý — ${l.title}</h3>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Trực quan hóa 4 giai đoạn/thành phần cốt lõi của chuyên đề</p>
+          </div>
+          <div class="overflow-x-auto">
+            <svg viewBox="0 0 840 160" class="w-full min-w-[620px] h-auto">
+              <line x1="90" y1="80" x2="750" y2="80" stroke="#6366f1" stroke-width="4" class="animate-dash" />
+              ${l.diagram.map((node, i) => `
+                <g transform="translate(${20 + i * 205}, 20)">
+                  <rect width="185" height="120" rx="18" fill="#1e293b" stroke="#6366f1" stroke-width="2" />
+                  <circle cx="92" cy="28" r="14" fill="#4f46e5" />
+                  <text x="92" y="33" text-anchor="middle" fill="#fff" font-size="11" font-weight="bold">0${i + 1}</text>
+                  <text x="92" y="62" text-anchor="middle" fill="#38bdf8" font-size="12" font-weight="bold">${node.k}</text>
+                  <text x="92" y="86" text-anchor="middle" fill="#e2e8f0" font-size="10.5">${node.v}</text>
+                </g>`).join('')}
+            </svg>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            ${l.diagram.map((d, i) => `
+              <div class="p-4 rounded-2xl text-white ${d.c} shadow-xs">
+                <div class="text-[11px] font-mono opacity-80">BƯỚC 0${i + 1}</div>
+                <div class="font-extrabold text-sm mt-0.5">${d.k}</div>
+                <div class="text-xs mt-1 opacity-95">${d.v}</div>
+              </div>`).join('')}
+          </div>
+        </div>`;
+    }
+
+    function renderVideo(l) {
+      const seg = l.video[st.vidIdx] || l.video[0];
+      return `
+        <div class="rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 sm:p-6">
+          <div class="flex items-center justify-between gap-2 mb-4">
+            <div>
+              <h3 class="text-base sm:text-lg font-extrabold">🎬 Video Bài giảng Minh họa Động</h3>
+              <p class="text-xs text-slate-500 dark:text-slate-400">Hoạt ảnh trực quan kèm phụ đề thuyết minh từng phân đoạn</p>
+            </div>
+            <span class="px-2.5 py-1 rounded-full text-[11px] font-mono font-bold bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300">● INTERACTIVE</span>
+          </div>
+          <div class="rounded-2xl overflow-hidden bg-slate-950 border border-slate-800">
+            <div class="min-h-[250px] p-6 flex flex-col items-center justify-center text-center bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-brand-900/40 via-slate-950 to-slate-950">
+              <div class="animate-float mb-3">
+                <svg viewBox="0 0 340 100" class="w-72 sm:w-80 h-auto mx-auto">
+                  <rect x="10" y="20" width="85" height="60" rx="12" fill="#1e293b" stroke="#38bdf8" stroke-width="2" />
+                  <text x="52" y="54" text-anchor="middle" fill="#38bdf8" font-size="11" font-weight="bold">CHỦ ĐỀ ${l.id}</text>
+                  <line x1="95" y1="50" x2="128" y2="50" stroke="#818cf8" stroke-width="3" class="${st.playing ? 'animate-dash' : ''}" />
+                  <rect x="128" y="12" width="84" height="76" rx="16" fill="#312e81" stroke="#34d399" stroke-width="2.5" />
+                  <text x="170" y="48" text-anchor="middle" fill="#34d399" font-size="11" font-weight="bold">COM109</text>
+                  <text x="170" y="65" text-anchor="middle" fill="#e0e7ff" font-size="10">${seg.t}</text>
+                  <line x1="212" y1="50" x2="245" y2="50" stroke="#34d399" stroke-width="3" class="${st.playing ? 'animate-dash' : ''}" />
+                  <rect x="245" y="20" width="85" height="60" rx="12" fill="#1e293b" stroke="#f59e0b" stroke-width="2" />
+                  <text x="287" y="54" text-anchor="middle" fill="#fbbf24" font-size="11" font-weight="bold">ỨNG DỤNG</text>
+                </svg>
+              </div>
+              <span class="px-3 py-1 rounded-full bg-brand-500/20 text-brand-300 text-xs font-bold mb-2">Phần ${st.vidIdx + 1}/${l.video.length}: ${seg.h}</span>
+              <div class="max-w-xl mx-auto px-4 py-3 rounded-xl bg-black/60 border border-white/10 text-slate-100 text-xs sm:text-sm leading-relaxed">“${seg.s}”</div>
+            </div>
+            <div class="bg-slate-900 px-4 py-3 border-t border-slate-800 flex flex-wrap items-center justify-between gap-2">
+              <div class="flex items-center gap-2">
+                <button onclick="togglePlay()" class="px-4 py-1.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-xs font-bold">${st.playing ? '⏸ Tạm dừng' : '▶ Phát bài giảng'}</button>
+                <span class="text-xs font-mono text-slate-400">${seg.t} / 04:30</span>
+              </div>
+              <div class="flex gap-1.5">
+                ${l.video.map((v, i) => `<button onclick="setVid(${i})" class="px-2.5 py-1 rounded-lg text-xs font-semibold ${i === st.vidIdx ? 'bg-cyan-400 text-slate-950 font-bold' : 'bg-slate-800 text-slate-300'}">${v.t}</button>`).join('')}
+              </div>
+            </div>
+          </div>
+        </div>`;
+    }
+
+    function renderQuiz(l) {
+      const best = st.scores[l.id];
+      let right = 0;
+      if (st.submitted) l.quiz.forEach((q, i) => { if (st.ans[i] === q.a) right++; });
+      return `
+        <div class="space-y-4">
+          <div class="rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h3 class="text-base sm:text-lg font-extrabold">📝 Quiz Trắc nghiệm — ${l.code}</h3>
+              <p class="text-xs text-slate-500 dark:text-slate-400">Chọn đáp án cho 5 câu hỏi và nhấn Nộp bài để xem giải thích chi tiết.</p>
+            </div>
+            ${best !== undefined ? `<span class="px-3 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 text-xs font-bold">🏆 Điểm cao nhất: ${best}%</span>` : ''}
+          </div>
+          ${st.submitted ? `
+            <div class="rounded-3xl p-5 border ${right >= 4 ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-300' : 'bg-amber-50 dark:bg-amber-950/40 border-amber-300'} flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h4 class="font-extrabold text-base">Kết quả: ${right}/${l.quiz.length} câu đúng (${Math.round((right / l.quiz.length) * 100)}%)</h4>
+                <p class="text-xs text-slate-600 dark:text-slate-300 mt-0.5">Xem giải thích chi tiết bên dưới mỗi câu hỏi.</p>
+              </div>
+              <button onclick="resetQuiz()" class="px-4 py-2 rounded-xl bg-brand-600 text-white text-xs font-bold">🔄 Làm lại</button>
+            </div>` : ''}
+          ${l.quiz.map((item, qi) => {
+            const sel = st.ans[qi];
+            return `
+              <div class="rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5">
+                <div class="flex gap-3 mb-3">
+                  <span class="w-6 h-6 rounded-lg bg-brand-100 dark:bg-brand-950 text-brand-700 dark:text-brand-300 font-extrabold text-xs flex items-center justify-center shrink-0">${qi + 1}</span>
+                  <h4 class="text-sm font-bold leading-snug">${item.q}</h4>
+                </div>
+                <div class="space-y-2">
+                  ${item.o.map((opt, oi) => {
+                    let cls = 'border-slate-200 dark:border-slate-800 hover:border-brand-400';
+                    if (!st.submitted && sel === oi) cls = 'border-brand-600 bg-brand-50 dark:bg-brand-950/60 font-semibold';
+                    else if (st.submitted && oi === item.a) cls = 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/60 font-bold text-emerald-800 dark:text-emerald-200';
+                    else if (st.submitted && sel === oi && oi !== item.a) cls = 'border-rose-500 bg-rose-50 dark:bg-rose-950/60 text-rose-800 dark:text-rose-200';
+                    return `<button onclick="pickOpt(${qi},${oi})" ${st.submitted ? 'disabled' : ''} class="w-full text-left p-3 rounded-2xl border text-xs sm:text-sm flex justify-between items-center transition ${cls}">
+                      <span><strong class="mr-1.5 font-mono">${String.fromCharCode(65 + oi)}.</strong>${opt}</span>
+                      ${st.submitted && oi === item.a ? '<span class="text-emerald-600 font-bold">✓</span>' : ''}
+                    </button>`;
+                  }).join('')}
+                </div>
+                ${st.submitted ? `<div class="mt-3 p-3 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs leading-relaxed"><strong class="text-brand-600 dark:text-brand-400">💡 Giải thích:</strong> ${item.e}</div>` : ''}
+              </div>`;
+          }).join('')}
+          ${!st.submitted ? `<div class="flex justify-end"><button onclick="submitQuiz()" class="px-6 py-2.5 rounded-2xl bg-brand-600 hover:bg-brand-700 text-white text-sm font-extrabold shadow-sm">Nộp bài & Chấm điểm</button></div>` : ''}
+        </div>`;
+    }
+
+    function renderMain() {
+      const l = curLesson(), isDone = st.done.includes(l.id);
+      $('b-code').textContent = l.code;
+      $('b-tag').textContent = l.tag;
+      $('b-title').textContent = l.title;
+      $('b-sub').textContent = l.sub;
+      $('b-status').className = `px-3 py-1 rounded-full text-xs font-semibold ${isDone ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300' : 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300'}`;
+      $('b-status').textContent = isDone ? '✓ Đã hoàn thành' : '⏳ Đang học';
+      $('complete-btn').className = `px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold shrink-0 transition ${isDone ? 'bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-200' : 'bg-emerald-600 hover:bg-emerald-700 text-white'}`;
+      $('complete-btn').textContent = isDone ? '✓ Đã hoàn thành (Bỏ chọn)' : '✓ Đánh dấu hoàn thành';
+
+      document.querySelectorAll('.tab-btn').forEach(b => {
+        const active = b.dataset.tab === st.tab;
+        b.className = `tab-btn px-4 py-2 rounded-xl text-xs sm:text-sm transition ${active ? 'font-bold bg-brand-600 text-white shadow-xs' : 'font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300'}`;
+      });
+
+      const view = $('tab-view');
+      view.classList.remove('fade-in'); void view.offsetWidth; view.classList.add('fade-in');
+      view.innerHTML = st.tab === 'lecture' ? renderLecture(l) : st.tab === 'diagram' ? renderDiagram(l) : st.tab === 'video' ? renderVideo(l) : renderQuiz(l);
+
+      $('note-input').value = st.notes[l.id] || '';
+      $('prev-btn').disabled = l.id === 1;
+      $('next-btn').disabled = l.id === LESSONS.length;
+    }
+
+    // =========================================================================
+    // SỰ KIỆN TƯƠNG TÁC
+    // =========================================================================
+    function stopVid() { if (vidTimer) { clearInterval(vidTimer); vidTimer = null; } st.playing = false; }
+    function selectLesson(id) {
+      stopVid(); st.curId = id; st.slide = 0; st.vidIdx = 0; st.ans = {}; st.submitted = false;
+      localStorage.setItem(K.CUR, id);
+      $('sidebar').classList.add('-translate-x-full'); $('backdrop').classList.add('hidden');
+      renderNav(); renderMain(); window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+    function switchTab(t) { if (t !== 'video') stopVid(); st.tab = t; renderMain(); }
+    function moveSlide(d) { const n = st.slide + d; if (n >= 0 && n < curLesson().slides.length) { st.slide = n; renderMain(); } }
+    function goSlide(i) { st.slide = i; renderMain(); }
+    function setVid(i) { st.vidIdx = i; renderMain(); }
+    function togglePlay() {
+      if (st.playing) { stopVid(); renderMain(); return; }
+      st.playing = true; renderMain();
+      vidTimer = setInterval(() => {
+        if (st.vidIdx < curLesson().video.length - 1) { st.vidIdx++; renderMain(); }
+        else { stopVid(); renderMain(); toast('Đã phát xong bài giảng minh họa!', 'ok'); }
+      }, 4500);
+    }
+    function pickOpt(qi, oi) { if (!st.submitted) { st.ans[qi] = oi; renderMain(); } }
+    function submitQuiz() {
+      const l = curLesson();
+      if (Object.keys(st.ans).length < l.quiz.length) return toast('Vui lòng chọn đủ 5 câu trước khi nộp bài!', 'warn');
+      st.submitted = true;
+      let right = 0; l.quiz.forEach((q, i) => { if (st.ans[i] === q.a) right++; });
+      const pct = Math.round((right / l.quiz.length) * 100);
+      if (pct >= (st.scores[l.id] || 0)) { st.scores[l.id] = pct; localStorage.setItem(K.QUIZ, JSON.stringify(st.scores)); }
+      updateStats(); renderNav(); renderMain(); toast(`Hoàn thành Quiz: ${pct}%`, 'ok');
+    }
+    function resetQuiz() { st.ans = {}; st.submitted = false; renderMain(); }
+    function exportMd() {
+      const l = curLesson();
+      const md = `# ${l.code}: ${l.title}\n> ${l.sub}\n\n## Thuật ngữ cốt lõi\n` +
+        l.cards.map(([k, v]) => `- **${k}**: ${v}`).join('\n') + `\n\n## Tóm tắt trọng tâm\n` +
+        l.notes.map(n => `- ${n.replace(/<[^>]*>?/gm, '')}`).join('\n');
+      downloadFile(`COM109_Bai_${l.id}.md`, md);
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      if (localStorage.getItem(K.THEME) === 'dark' || (!localStorage.getItem(K.THEME) && matchMedia('(prefers-color-scheme:dark)').matches)) {
+        document.documentElement.classList.add('dark');
+      }
+      $('theme-btn').onclick = () => localStorage.setItem(K.THEME, document.documentElement.classList.toggle('dark') ? 'dark' : 'light');
+      $('menu-btn').onclick = () => { $('sidebar').classList.toggle('-translate-x-full'); $('backdrop').classList.toggle('hidden'); };
+      $('backdrop').onclick = () => { $('sidebar').classList.add('-translate-x-full'); $('backdrop').classList.add('hidden'); };
+
+      $('search-input').oninput = e => { st.query = e.target.value; $('clear-search').classList.toggle('hidden', !st.query); renderNav(); };
+      $('clear-search').onclick = () => { st.query = ''; $('search-input').value = ''; $('clear-search').classList.add('hidden'); renderNav(); };
+
+      document.querySelectorAll('.filter-btn').forEach(b => b.onclick = () => {
+        st.filter = b.dataset.filter;
+        document.querySelectorAll('.filter-btn').forEach(x => x.className = 'filter-btn py-1.5 rounded-lg font-medium bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300');
+        b.className = 'filter-btn py-1.5 rounded-lg font-semibold bg-brand-600 text-white';
+        renderNav();
+      });
+
+      document.querySelectorAll('.tab-btn').forEach(b => b.onclick = () => switchTab(b.dataset.tab));
+
+      $('complete-btn').onclick = () => {
+        const idx = st.done.indexOf(st.curId);
+        if (idx === -1) { st.done.push(st.curId); toast(`Đã hoàn thành Bài ${st.curId}!`, 'ok'); }
+        else { st.done.splice(idx, 1); toast(`Đã bỏ đánh dấu Bài ${st.curId}.`); }
+        localStorage.setItem(K.DONE, JSON.stringify(st.done));
+        updateStats(); renderNav(); renderMain();
+      };
+
+      let nTimer = null;
+      $('note-input').oninput = e => {
+        $('note-status').textContent = '⏳ Đang lưu...';
+        clearTimeout(nTimer);
+        nTimer = setTimeout(() => { st.notes[st.curId] = e.target.value; localStorage.setItem(K.NOTES, JSON.stringify(st.notes)); $('note-status').textContent = '✓ Đã lưu'; }, 250);
+      };
+      $('export-note').onclick = () => downloadFile(`GhiChu_COM109_Bai_${st.curId}.txt`, `GHI CHÚ COM109 - BÀI ${st.curId}\n\n${$('note-input').value || '(Trống)'}`);
+
+      $('prev-btn').onclick = () => st.curId > 1 && selectLesson(st.curId - 1);
+      $('next-btn').onclick = () => st.curId < LESSONS.length && selectLesson(st.curId + 1);
+
+      let confirmReset = false;
+      $('reset-btn').onclick = () => {
+        if (!confirmReset) {
+          confirmReset = true; $('reset-btn').textContent = 'Nhấn lần nữa để xác nhận'; $('reset-btn').classList.add('bg-rose-600', 'text-white');
+          setTimeout(() => { confirmReset = false; $('reset-btn').textContent = 'Đặt lại tiến độ'; $('reset-btn').classList.remove('bg-rose-600', 'text-white'); }, 3000);
+        } else {
+          confirmReset = false; st.done = []; st.scores = {};
+          localStorage.removeItem(K.DONE); localStorage.removeItem(K.QUIZ);
+          $('reset-btn').textContent = 'Đặt lại tiến độ'; $('reset-btn').classList.remove('bg-rose-600', 'text-white');
+          updateStats(); renderNav(); renderMain(); toast('Đã đặt lại toàn bộ tiến độ.');
+        }
+      };
+
+      updateStats(); renderNav(); renderMain();
+    });
+  </script>
+</body>
+</html>
